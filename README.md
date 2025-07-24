@@ -1,36 +1,27 @@
-# Azure NSG Rules for Twilio SIP Trunking + HTTP Access(FreePBX)
+# Azure NSG Rules for Twilio SIP Trunking + HTTPS Access(FreePBX)
 
 This repository provides Azure CLI scripts and guidance to configure **inbound Network Security Group (NSG) rules** for:
 
 - ✅ Twilio Elastic SIP Trunking (Signaling + Media)
-- 🌐 HTTP access to Azure Virtual Machines
-- 🔐 Region-aware VoIP deployments (e.g., FreePBX, Asterisk)
+- 🔒 HTTPS access (port 443) to Azure Virtual Machines
+- 🧪 Secure and region-aware **VoIP testing environments** using FreePBX, Asterisk, or other SIP-based systems
 
 ---
 
 > ⚠️ **DISCLAIMER**  
-> This setup is intended for **testing and development purposes only**.  
-> It is **not recommended for production environments** without further hardening, such as:
-> - Source IP restrictions
-> - Firewall and DDoS protection
-> - Monitoring and logging
-> - Rate limiting and security auditing
-
----
-
-## 🚀 Use Case
-
-For users deploying VoIP systems in Microsoft Azure (e.g., FreePBX, Asterisk, Kamailio), these NSG rules ensure:
-
-- SIP ports (`5060`, `5061`) are open to **Twilio’s signaling gateways**
-- RTP media ports (`10000–60000`) are open for **Twilio’s media traffic**
-- Port `80` is publicly accessible for web-based UIs (admin panels, etc.)
+> These configurations are intended for **testing and development use only**.  
+> Do **not** use them in production without additional security measures such as:
+> - IP allowlists
+> - DDoS protection and rate limiting
+> - HTTPS-only hardened web UIs
+> - Proper logging, alerts, and audits
 
 ---
 
 ## 🔒 Inbound Rules Overview
 
 ### 🔹 Twilio SIP Signaling (5060/5061)
+
 | Region              | IP Range             |
 |---------------------|----------------------|
 | North America (VA)  | 54.172.60.0/30       |
@@ -49,24 +40,26 @@ For users deploying VoIP systems in Microsoft Azure (e.g., FreePBX, Asterisk, Ka
 ---
 
 ### 🔹 Twilio Media (RTP/SRTP)
+
 | IP Range        | Protocol | Ports         |
 |-----------------|----------|---------------|
 | 168.86.128.0/18 | UDP      | 10000–60000   |
 
 ---
 
-### 🔹 HTTP Access
+### 🔹 HTTPS Access (Port 443)
+
 | Source | Protocol | Port |
 |--------|----------|------|
-| `*`    | TCP      | 80   |
+| `*`    | TCP      | 443  |
 
 ---
 
 ## 🛠️ Azure CLI Setup
 
-Replace `<nsg-name>` and `<resource-group>` with your own.
+Replace `<nsg-name>` and `<resource-group>` with your actual values.
 
-### 1. Twilio Media Ports
+### 1. Allow Twilio Media
 ```bash
 az network nsg rule create \
   --resource-group <resource-group> \
@@ -81,7 +74,7 @@ az network nsg rule create \
   --description "Allow Twilio RTP media"
 ````
 
-### 2. Twilio SIP Signaling
+### 2. Allow Twilio SIP Signaling
 
 ```bash
 az network nsg rule create \
@@ -105,45 +98,50 @@ az network nsg rule create \
   --description "Allow Twilio SIP signaling"
 ```
 
-### 3. HTTP (Port 80)
+### 3. Allow HTTPS (Port 443)
 
 ```bash
 az network nsg rule create \
   --resource-group <resource-group> \
   --nsg-name <nsg-name> \
-  --name Allow-HTTP \
-  --priority 200 \
+  --name Allow-HTTPS \
+  --priority 210 \
   --direction Inbound \
   --access Allow \
   --protocol Tcp \
   --source-address-prefixes '*' \
-  --destination-port-ranges 80 \
-  --description "Allow HTTP access"
+  --destination-port-ranges 443 \
+  --description "Allow secure HTTPS access"
 ```
 
 ---
 
-## 📌 Best Practices for Production (Not Included Here)
+## 📌 Best Practices for Production (Not Included)
 
-If deploying in production:
+For production deployments, it's highly recommended to:
 
 * Restrict access to specific trusted IPs
-* Use HTTPS (port 443) and disable HTTP
-* Implement Azure Firewall or WAF
-* Log and monitor traffic
-* Apply updates and security patches regularly
+* Enable HTTPS-only admin panels and disable HTTP
+* Use Azure Application Gateway or Firewall
+* Configure NSG Flow Logs and alerts
+* Patch your VoIP software and OS regularly
 
 ---
 
-## 📚 Resources
+## 📚 References
 
-* [Twilio SIP Trunking IPs](https://www.twilio.com/docs/sip-trunking/ip-addresses)
-* [Azure NSG Documentation](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview)
-* [FreePBX on Azure](https://wiki.freepbx.org/display/FPG/Azure)
+* [Twilio SIP IP Address Guide](https://www.twilio.com/docs/sip-trunking/ip-addresses)
+* [Azure NSG Docs](https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview)
+* [FreePBX on Azure Setup](https://wiki.freepbx.org/display/FPG/Azure)
+
+---
+
+## 🧾 License
+
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
 ## 🙌 Contributing
 
-Contributions are welcome!
-Submit issues or pull requests to support additional VoIP providers or improve rule management automation.
+Contributions and pull requests are welcome to improve rule management, support more VoIP providers, or harden production recommendations.
